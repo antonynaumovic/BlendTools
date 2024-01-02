@@ -105,6 +105,18 @@ class MirrorSettings(bpy.types.PropertyGroup):
         update=MirrorObject,
     )
 
+class LODSettings(bpy.types.PropertyGroup):
+    enum_LODAction: bpy.props.EnumProperty(
+        name="LOD Preset",
+        description="LOD Preset Selecting",
+        items=[
+        ("0", "Hero", ""),
+        ("1", "Background", ""),
+        ]
+    )
+
+
+
 class BlendTools_Panel(bpy.types.Panel):
     bl_space_type = "VIEW_3D"
     bl_region_type = "UI"
@@ -185,6 +197,22 @@ class ExtraTools_PT_Panel(BlendTools_Panel, bpy.types.Panel):
         layout.operator("object.decustom", text="Remove Custom Normals").id = True
         layout.operator("object.decustom", text="Add Custom Normals").id = False
         layout.operator("object.showconcave", text="Show Concave")
+
+class LODTools_PT_Panel(BlendTools_Panel, bpy.types.Panel):
+    bl_parent_id = "BLENDTOOLS_PT_panel"
+    bl_label = "LOD"
+    @classmethod
+    def poll(cls, context):
+        return (context.object is not None)
+
+
+    def draw(self, context):
+        scene = context.scene
+        settings = scene.lodSettings
+        layout = self.layout
+        layout.prop(settings, "enum_LODAction", expand=True)
+        layout.operator("object.lodify", text="LODify")
+        
 
 class Triangulate_OT_Operator(bpy.types.Operator):
     bl_idname= "object.triangulate"
@@ -481,6 +509,12 @@ class LODify_OT_Operator(bpy.types.Operator):
     def execute(self, context):
         OBs = bpy.context.selected_objects
         active = bpy.context.active_object
+        for ob in OBs:
+            ob = bpy.context.active_object
+            bpy.ops.object.select_all(action='DESELECT')
+            ob.select_set(state=True)
+            bpy.context.view_layer.objects.active = ob
+        return{'FINISHED'}
 
 class ShowConcave_OT_Operator(bpy.types.Operator):
     bl_idname= "object.showconcave"
@@ -521,7 +555,8 @@ class ShowConcave_OT_Operator(bpy.types.Operator):
         return{'FINISHED'}
 
 classes = (BevelSettings,
-           MirrorSettings,  
+           MirrorSettings,
+           LODSettings,
            BlendTools_PT_Panel,
            BevelTools_PT_Panel,
            UpdateBevelTools_PT_Panel,
@@ -535,7 +570,9 @@ classes = (BevelSettings,
            RemoveSuffix_OT_Operator,
            UpdateMirror_OT_Operator,
            DeCustom_OT_Operator,
-           ShowConcave_OT_Operator
+           ShowConcave_OT_Operator,
+           LODTools_PT_Panel,
+           LODify_OT_Operator
            )
 
 def register():
@@ -543,10 +580,12 @@ def register():
         bpy.utils.register_class(cls)
     bpy.types.Scene.bevelSettings = bpy.props.PointerProperty(type=BevelSettings)
     bpy.types.Scene.mirrorSettings = bpy.props.PointerProperty(type=MirrorSettings)
+    bpy.types.Scene.lodSettings = bpy.props.PointerProperty(type=LODSettings)
 
 def unregister():
     del bpy.types.Scene.bevelSettings
     del bpy.types.Scene.mirrorSettings
+    del bpy.types.Scene.lodSettings
     for cls in reversed(classes):
         bpy.utils.unregister_class(cls)
 

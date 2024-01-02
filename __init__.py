@@ -12,6 +12,10 @@
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 import bpy, math, traceback
+import bmesh
+from mathutils.geometry import (
+                distance_point_to_plane,
+                normal)
 
 bl_info = {
     "name" : "BlendTools",
@@ -180,6 +184,7 @@ class ExtraTools_PT_Panel(BlendTools_Panel, bpy.types.Panel):
         row.operator("object.removesuffix", text="Remove High").id="_high"
         layout.operator("object.decustom", text="Remove Custom Normals").id = True
         layout.operator("object.decustom", text="Add Custom Normals").id = False
+        layout.operator("object.showconcave", text="Show Concave")
 
 class Triangulate_OT_Operator(bpy.types.Operator):
     bl_idname= "object.triangulate"
@@ -467,6 +472,54 @@ class DeCustom_OT_Operator(bpy.types.Operator):
         bpy.context.view_layer.objects.active = active
         return {"FINISHED"}
     
+class LODify_OT_Operator(bpy.types.Operator):
+    bl_idname= "object.lodify"
+    bl_label="lodify"
+    bl_description="Create LODs"
+    id : bpy.props.IntProperty()
+
+    def execute(self, context):
+        OBs = bpy.context.selected_objects
+        active = bpy.context.active_object
+
+class ShowConcave_OT_Operator(bpy.types.Operator):
+    bl_idname= "object.showconcave"
+    bl_label="showconcave"
+    bl_description="Flips Normals Of Concave"
+
+    def execute(self, context):
+        OBs = bpy.context.selected_objects
+        mode = context.active_object.mode
+        for ob in OBs:
+            bpy.ops.object.mode_set(mode='EDIT')
+            mesh = ob.data
+
+            TOL = 0.0001
+
+            # select None
+            bpy.ops.mesh.select_all(action='DESELECT')
+            bm = bmesh.from_edit_mesh(mesh)
+            ngons = [f for f in bm.faces if len(f.verts) > 3]
+
+            for ngon in ngons:
+                # define a plane from first 3 points
+                co = ngon.verts[0].co
+                norm = normal([v.co for v in ngon.verts[:3]])
+
+                ngon.select =  not all(
+                    [(distance_point_to_plane(v.co, co, norm)) < TOL
+                    for v in ngon.verts[3:]])
+                if ngon.select: 
+                    bpy.ops.mesh.normals_make_consistent(inside=True)
+
+                print(([distance_point_to_plane(v.co, co, norm) for v in ngon.verts[3:]]))
+
+            bmesh.update_edit_mesh(mesh)
+            bpy.ops.object.mode_set(mode='OBJECT')
+        bpy.ops.object.mode_set(mode=mode)
+        bpy.context.space_data.overlay.show_face_orientation = True
+        return{'FINISHED'}
+
 classes = (BevelSettings,
            MirrorSettings,  
            BlendTools_PT_Panel,
@@ -481,7 +534,8 @@ classes = (BevelSettings,
            AddSuffix_OT_Operator,
            RemoveSuffix_OT_Operator,
            UpdateMirror_OT_Operator,
-           DeCustom_OT_Operator
+           DeCustom_OT_Operator,
+           ShowConcave_OT_Operator
            )
 
 def register():

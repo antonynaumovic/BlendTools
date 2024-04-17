@@ -93,6 +93,8 @@ class UpdateBevel_OT_Operator(bpy.types.Operator):
         context = bpy.context
         BevelSettings = scene.bevelSettings
         bevelList = list(filter(lambda x: x.name.startswith("WN_Bevel_"), bpy.context.object.modifiers))
+        smoothList = list(filter(lambda x: x.name.startswith("WN_Smooth"), bpy.context.object.modifiers))
+        smoothAmount = len(smoothList)
         curBevel = bevelList[-1]
         properties = []
         targets = context.copy()
@@ -111,6 +113,9 @@ class UpdateBevel_OT_Operator(bpy.types.Operator):
                 if len(bevelList) > 0:
                     bevelToUpdate = bevelList[-1]
                 else:
+                    if smoothAmount == 0:
+                        bpy.ops.object.modifier_add_node_group(asset_library_type='ESSENTIALS', asset_library_identifier="", relative_asset_identifier="geometry_nodes\\smooth_by_angle.blend\\NodeTree\\Smooth by Angle")
+                        bpy.context.object.modifiers[len(ob.modifiers)-1].name = f"WN_Smooth"
                     bevelToUpdate = bpy.ops.object.modifier_add(type='BEVEL')
                     target.modifiers[len(target.modifiers)-1].name = "WN_Bevel_1"
                     bevelToUpdate = target.modifiers["WN_Bevel_1"]
@@ -119,6 +124,7 @@ class UpdateBevel_OT_Operator(bpy.types.Operator):
                     setattr(bevelToUpdate, prop, getattr(curBevel, prop))
         bpy.context.view_layer.objects.active = targets['active_object']
         return{"FINISHED"}
+
 
 
 class Bevel_OT_Operator(bpy.types.Operator):
@@ -150,15 +156,21 @@ class Bevel_OT_Operator(bpy.types.Operator):
                     bpy.ops.transform.edge_bevelweight(value=1)
                     bpy.ops.object.mode_set(mode='OBJECT')
                     bevelList = list(filter(lambda x: x.name.startswith("WN_Bevel_"), bpy.context.object.modifiers))
+                    smoothList = list(filter(lambda x: x.name.startswith("WN_Smooth"), bpy.context.object.modifiers))
                     bevelAmount = len(bevelList)
+                    smoothAmount = len(smoothList)
                     if bevelAmount == 0:
-                        bpy.context.object.data.use_auto_smooth = True
                         bpy.ops.object.modifier_add(type='BEVEL')
                         bpy.context.object.modifiers[len(ob.modifiers)-1].name = f"WN_Bevel_{bevelAmount+1}"
                         curBevel = bpy.context.object.modifiers[f"WN_Bevel_{bevelAmount+1}"]
                         curBevel.limit_method = 'WEIGHT'
                     else:
                         curBevel = bevelList[-1]
+
+                    if smoothAmount == 0:
+                            bpy.ops.object.modifier_add_node_group(asset_library_type='ESSENTIALS', asset_library_identifier="", relative_asset_identifier="geometry_nodes\\smooth_by_angle.blend\\NodeTree\\Smooth by Angle")
+                            bpy.context.object.modifiers[len(ob.modifiers)-1].name = f"WN_Smooth"
+                    
                     if BevelSettings.enum_bevelAction == "0":
                         curBevel.miter_outer = "MITER_ARC"
                         curBevel.use_clamp_overlap = False

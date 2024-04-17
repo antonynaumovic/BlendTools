@@ -22,11 +22,11 @@ bl_info = {
     "name" : "BlendTools",
     "author" : "Antony Naumovic",
     "description" : "",
-    "blender" : (3, 6, 0),
-    "version" : (0, 0, 2),
+    "blender" : (4, 1, 0),
+    "version" : (0, 0, 3),
     "location" : "",
     "warning" : "",
-    "category" : "Generic"
+    "category" : "Tools"
 }
 
 

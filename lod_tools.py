@@ -22,7 +22,7 @@ class LODTools_PT_Panel(BlendTools_Panel, bpy.types.Panel):
     
     @classmethod
     def poll(cls, context):
-        return (context.object is not None)
+        return (bpy.context.active_object is not None)
 
 
     def draw(self, context):

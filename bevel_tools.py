@@ -54,6 +54,7 @@ class BevelTools_PT_Panel(BlendTools_Panel, bpy.types.Panel):
         layout = self.layout
         
         layout.operator("object.bevelmod", text="Bevel")
+        layout.operator("object.smoothmod", text="Smooth By Angle")
         layout.prop(settings, "enum_bevelAction")
         layout.prop(settings, "float_bevelAmount")
         layout.prop(settings, "float_sharpAngle")
@@ -115,7 +116,8 @@ class UpdateBevel_OT_Operator(bpy.types.Operator):
                 else:
                     if smoothAmount == 0:
                         bpy.ops.object.modifier_add_node_group(asset_library_type='ESSENTIALS', asset_library_identifier="", relative_asset_identifier="geometry_nodes\\smooth_by_angle.blend\\NodeTree\\Smooth by Angle")
-                        bpy.context.object.modifiers[len(ob.modifiers)-1].name = f"WN_Smooth"
+                        bpy.context.object.modifiers[len(target.modifiers)-1].name = f"WN_Smooth"
+                        bpy.ops.object.shade_smooth()
                     bevelToUpdate = bpy.ops.object.modifier_add(type='BEVEL')
                     target.modifiers[len(target.modifiers)-1].name = "WN_Bevel_1"
                     bevelToUpdate = target.modifiers["WN_Bevel_1"]
@@ -125,7 +127,38 @@ class UpdateBevel_OT_Operator(bpy.types.Operator):
         bpy.context.view_layer.objects.active = targets['active_object']
         return{"FINISHED"}
 
+class Smooth_OT_Operator(bpy.types.Operator):
+    
+    bl_idname= "object.smoothmod"
+    bl_label="smoothmod"
+    bl_description="Add Smooth Modifier"
 
+    def execute(self, context):
+        scene = context.scene
+        C = bpy.context
+        BevelSettings = scene.bevelSettings
+
+        obs = bpy.context.selected_objects
+        active = bpy.context.active_object
+        try:
+            for ob in obs:
+                #deselect all but just one object and make it active
+                ob.select_set(state=True)
+                bpy.context.view_layer.objects.active = ob
+                if ob.type == "MESH":
+                    smoothList = list(filter(lambda x: x.name.startswith("WN_Smooth"), bpy.context.object.modifiers))
+                    smoothAmount = len(smoothList)
+                    if smoothAmount == 0:
+                            bpy.ops.object.modifier_add_node_group(asset_library_type='ESSENTIALS', asset_library_identifier="", relative_asset_identifier="geometry_nodes\\smooth_by_angle.blend\\NodeTree\\Smooth by Angle")
+                            bpy.context.object.modifiers[len(ob.modifiers)-1].name = f"WN_Smooth"
+                            bpy.ops.object.shade_smooth()
+                for ob in obs:
+                    ob.select_set(state=True)
+                bpy.context.view_layer.objects.active = active
+        except Exception as e:
+            self.report({"WARNING"}, str(e))
+        
+        return {"FINISHED"}
 
 class Bevel_OT_Operator(bpy.types.Operator):
     

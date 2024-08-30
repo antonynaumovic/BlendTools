@@ -49,7 +49,7 @@ class Triangulate_OT_Operator(bpy.types.Operator):
                 if "WN_Triangulate" not in bpy.context.object.modifiers and bpy.context.object.type == "MESH":
                     bpy.ops.object.modifier_add(type='TRIANGULATE')
                     bpy.context.object.modifiers[len(obj.modifiers)-1].name = "WN_Triangulate"
-                    bpy.context.object.modifiers["WN_Triangulate"].keep_custom_normals = True
+                    # bpy.context.object.modifiers["WN_Triangulate"].keep_custom_normals = True
                     bpy.context.object.modifiers["WN_Triangulate"].min_vertices = 5
         except Exception as e:
             self.report({"WARNING"}, str(e))

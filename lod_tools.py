@@ -68,6 +68,8 @@ class LODify_OT_Operator(bpy.types.Operator):
         OBs = bpy.context.selected_objects
         active = bpy.context.active_object
 
+        bpy.ops.ed.undo_push()
+
         for i in range(0, settings.int_LODCount):
             if f"LOD{i}" not in bpy.data.collections:
                 coll = bpy.data.collections.new(f"LOD{i}")
@@ -76,17 +78,28 @@ class LODify_OT_Operator(bpy.types.Operator):
 
         for ob in OBs:
             bpy.ops.object.select_all(action='DESELECT')
-            ob.select_set(state=True)
-            bpy.context.view_layer.objects.active = ob
-            for i in range(0, settings.int_LODCount):
-                lodOb = bpy.context.active_object.copy()
-                bpy.data.collections[f"LOD{i}"].objects.link(lodOb)
-                lodOb.name = (ob.name if ob.name[-4:-1] == ".00" else ob.name) + f"_LOD{i}"
-                decMod = lodOb.modifiers.new("WN_Decimate", 'DECIMATE')
-                if i > 0:
-                    decMod.ratio = (1/(i+1)) * settings.float_LODBias
-                    bpy.data.collections[f"LOD{i}"]["decRatio"] = (1/(i+1)) * settings.float_LODBias
-                
+            if ob.parent == None or ob == active:
+                bpy.context.view_layer.objects.active = ob
+                for i in range(0, settings.int_LODCount):
+                    bpy.ops.object.select_all(action='DESELECT')
+                    ob.select_set(state=True)
+                    bpy.context.view_layer.objects.active = ob
+                    bpy.ops.object.select_grouped(extend=True, type="CHILDREN_RECURSIVE")
+                    bpy.ops.object.duplicate()
+                    lodObs = bpy.context.selected_objects
+                    for lodOb in lodObs:
+                        for other_col in lodOb.users_collection:
+                            other_col.objects.unlink(lodOb)
+                        bpy.data.collections[f"LOD{i}"].objects.link(lodOb)
+                        lodOb.name = (lodOb.name[:-4] if lodOb.name[-4:-1] == ".00" else lodOb.name) + f"_LOD{i}"
+                        decMod = lodOb.modifiers.new("WN_Decimate", 'DECIMATE')
+                        if i > 0:
+                            decMod.ratio = (1/(i+1)) * settings.float_LODBias
+                            bpy.data.collections[f"LOD{i}"]["decRatio"] = (1/(i+1)) * settings.float_LODBias
+                    
+            break
+
+        bpy.ops.ed.undo_push()
 
 
         return{'FINISHED'}

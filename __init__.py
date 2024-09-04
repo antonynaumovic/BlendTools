@@ -23,7 +23,7 @@ bl_info = {
     "author" : "Antony Naumovic",
     "description" : "",
     "blender" : (4, 2, 0),
-    "version" : (0, 0, 7),
+    "version" : (0, 0, 8),
     "location" : "",
     "warning" : "",
     "category" : "Tools"

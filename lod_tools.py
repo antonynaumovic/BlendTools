@@ -13,8 +13,12 @@ class LODSettings(bpy.types.PropertyGroup):
         min=0,
         max=1,
         default=1,
-
     )
+    bool_LODLinked: bpy.props.BoolProperty(
+        name="Duplicate Linked",
+        default=True,
+    )
+
     
 class LODTools_PT_Panel(BlendTools_Panel, bpy.types.Panel):
     bl_parent_id = "BLENDTOOLS_PT_panel"
@@ -31,6 +35,7 @@ class LODTools_PT_Panel(BlendTools_Panel, bpy.types.Panel):
         layout = self.layout
         layout.prop(settings, "int_LODCount", slider=True)
         layout.prop(settings, "float_LODBias", slider=True)
+        layout.prop(settings, "bool_LODLinked")
         layout.operator("object.lodify", text="LODify")
 
         if "WN_Decimate" in bpy.context.active_object.modifiers:
@@ -85,7 +90,7 @@ class LODify_OT_Operator(bpy.types.Operator):
                     ob.select_set(state=True)
                     bpy.context.view_layer.objects.active = ob
                     bpy.ops.object.select_grouped(extend=True, type="CHILDREN_RECURSIVE")
-                    bpy.ops.object.duplicate()
+                    bpy.ops.object.duplicate(linked=settings.bool_LODLinked)
                     lodObs = bpy.context.selected_objects
                     for lodOb in lodObs:
                         for other_col in lodOb.users_collection:

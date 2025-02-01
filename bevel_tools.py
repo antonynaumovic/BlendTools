@@ -20,6 +20,15 @@ class BevelSettings(bpy.types.PropertyGroup):
         unit='ROTATION',
         subtype='ANGLE'
     )
+    float_smoothAngle : bpy.props.FloatProperty(
+        name="Smooth Angle",
+        description="Auto Smooth Angle",
+        default=0.959931,
+        min=0,
+        max=math.pi*2,
+        unit='ROTATION',
+        subtype='ANGLE'
+    )
     enum_bevelAction: bpy.props.EnumProperty(
         name="Bevel Preset",
         description="Action Selecting",
@@ -56,9 +65,11 @@ class BevelTools_PT_Panel(BlendTools_Panel, bpy.types.Panel):
         
         layout.operator("object.bevelmod", text="Bevel")
         layout.operator("object.smoothmod", text="Smooth By Angle")
+        layout.operator("object.weightedmod", text="Weighted Normal")
         layout.prop(settings, "enum_bevelAction")
         layout.prop(settings, "float_bevelAmount")
         layout.prop(settings, "float_sharpAngle")
+        layout.prop(settings, "float_smoothAngle")
         layout.prop(settings, "int_segAmounts")
         layout.prop(settings, "bool_redoWeights")
 
@@ -121,6 +132,7 @@ class UpdateBevel_OT_Operator(bpy.types.Operator):
                         for mod in reversed(target.modifiers):
                             if mod.type == "NODES":
                                 mod.name = f"WN_SMOOTH"
+                                mod["Input_1"] = BevelSettings.float_smoothAngle
                                 break
                     bevelToUpdate = bpy.ops.object.modifier_add(type='BEVEL')
                     for mod in reversed(target.modifiers):
@@ -133,31 +145,6 @@ class UpdateBevel_OT_Operator(bpy.types.Operator):
                     setattr(bevelToUpdate, prop, getattr(curBevel, prop))
         bpy.context.view_layer.objects.active = targets['active_object']
         return{"FINISHED"}
-
-# def get_internal_asset_path():
-#     for path_type in ("LOCAL", "SYSTEM", "USER"):
-#         path = Path(bpy.utils.resource_path(path_type)) / "datafiles" / "assets"
-#         if path.exists():
-#             return path
-#     assert False
-
-# SMOOTH_BY_ANGLE_ASSET_PATH = str(
-#     get_internal_asset_path() / "geometry_nodes" / "smooth_by_angle.blend"
-# )
-# SMOOTH_BY_ANGLE_NODE_GROUP_NAME = "Smooth by Angle"
-# def add_smooth_by_angle_modifier(obj):
-#     global SMOOTH_BY_ANGLE_NODE_GROUP_NAME
-
-#     smooth_by_angle_node_group = bpy.data.node_groups.get(SMOOTH_BY_ANGLE_NODE_GROUP_NAME)
-#     if not smooth_by_angle_node_group or smooth_by_angle_node_group.type != "GEOMETRY":
-#         with bpy.data.libraries.load(SMOOTH_BY_ANGLE_ASSET_PATH) as (data_from, data_to):
-#             data_to.node_groups = [SMOOTH_BY_ANGLE_NODE_GROUP_NAME]
-#         smooth_by_angle_node_group = data_to.node_groups[0]
-#         SMOOTH_BY_ANGLE_NODE_GROUP_NAME = smooth_by_angle_node_group.name
-
-#     modifier = obj.modifiers.new("Smooth by Angle", "NODES")
-#     modifier.node_group = smooth_by_angle_node_group
-
 
 
 class Smooth_OT_Operator(bpy.types.Operator):
@@ -188,8 +175,48 @@ class Smooth_OT_Operator(bpy.types.Operator):
                         for mod in reversed(ob.modifiers):
                             if mod.type == "NODES":
                                 mod.name = f"WN_Smooth"
+                                mod["Input_1"] = BevelSettings.float_smoothAngle
                                 break
                         
+                for ob in obs:
+                    ob.select_set(state=True)
+                bpy.context.view_layer.objects.active = active
+        except Exception as e:
+            self.report({"WARNING"}, str(e))
+        
+        return {"FINISHED"}
+
+class Weighted_OT_Operator(bpy.types.Operator):
+    
+    bl_idname= "object.weightedmod"
+    bl_label="weightedmod"
+    bl_description="Add Weighted Normal Modifier"
+
+    def execute(self, context):
+        scene = context.scene
+        C = bpy.context
+        BevelSettings = scene.bevelSettings
+        obs = bpy.context.selected_objects
+        active = bpy.context.active_object
+        try:
+            for ob in obs:
+                bpy.ops.object.select_all(action='DESELECT')
+                #deselect all but just one object and make it active
+                ob.select_set(state=True)
+                bpy.context.view_layer.objects.active = ob
+                if ob.type == "MESH":
+                    smoothList = list(filter(lambda x: x.name.startswith("WN_Weighted Normal"), ob.modifiers))
+                    smoothAmount = len(smoothList)
+                    if smoothAmount == 0:
+                        bpy.ops.object.modifier_add(type='WEIGHTED_NORMAL')
+                        for mod in reversed(ob.modifiers):
+                            if mod.type == "WEIGHTED_NORMAL":
+                                mod.name = f"WN_Weighted Normal"
+                                mod.weight = 100
+                                break
+                    else:
+                        for i in smoothList:
+                            i.weight = 100
                 for ob in obs:
                     ob.select_set(state=True)
                 bpy.context.view_layer.objects.active = active
@@ -247,8 +274,9 @@ class Bevel_OT_Operator(bpy.types.Operator):
                             for mod in reversed(ob.modifiers):
                                 if mod.type == "NODES":
                                     mod.name = f"WN_Smooth"
+                                    mod["Input_1"] = BevelSettings.float_smoothAngle  
                                     break
-                    
+                                          
                     if BevelSettings.enum_bevelAction == "0":
                         curBevel.miter_outer = "MITER_ARC"
                         curBevel.use_clamp_overlap = False

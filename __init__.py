@@ -23,7 +23,7 @@ bl_info = {
     "author" : "Antony Naumovic",
     "description" : "",
     "blender" : (4, 3, 2),
-    "version" : (0, 0, 17),
+    "version" : (0, 0, 18),
     "location" : "",
     "warning" : "",
     "category" : "Tools"
@@ -57,7 +57,8 @@ classes = (BevelSettings,
            LODTools_PT_Panel,
            LODify_OT_Operator,
            UpdateLODs_OT_Operator,
-           Smooth_OT_Operator
+           Smooth_OT_Operator,
+           Weighted_OT_Operator
            )
 
 def register():

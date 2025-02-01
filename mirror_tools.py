@@ -20,8 +20,11 @@ def MirrorObject(self, context):
     try:
         for object in OBs:
             if "WN_Mirror" not in bpy.context.object.modifiers:
-                bpy.ops.object.modifier_add(type='MIRROR')
-                bpy.context.object.modifiers[len(object.modifiers)-1].name = "WN_Mirror"
+                mirrorMod = bpy.ops.object.modifier_add(type='MIRROR')
+                for mod in reversed(object.modifiers):
+                    if mod.type == "MIRROR":
+                        mod.name = f"WN_Mirror"
+                        break
             mirrorModifier = bpy.context.object.modifiers["WN_Mirror"]
             mirrorModifier.use_axis = MirrorSettings.boolVec_Mirror
             mirrorModifier.mirror_object = mirrorObj
@@ -94,7 +97,11 @@ class UpdateMirror_OT_Operator(bpy.types.Operator):
                     bevelToUpdate = bevelList[-1]
                 else:
                     bevelToUpdate = bpy.ops.object.modifier_add(type='MIRROR')
-                    target.modifiers[len(target.modifiers)-1].name = "WN_Mirror"
+                   
+                    for mod in reversed(target.modifiers):
+                        if mod.type == "MIRROR":
+                            mod.name = f"WN_Mirror"
+                            break
                     bevelToUpdate = target.modifiers["WN_Mirror"]
                 for prop in properties:
                     setattr(bevelToUpdate, prop, getattr(curBevel, prop))
@@ -124,7 +131,10 @@ class AddMirror_OT_Operator(bpy.types.Operator):
             bpy.context.view_layer.objects.active = obj
             if "WN_Mirror" not in obj.modifiers:
                 bpy.ops.object.modifier_add(type='MIRROR')
-                obj.modifiers[len(obj.modifiers)-1].name = "WN_Mirror"
+                for mod in reversed(obj.modifiers):
+                    if mod.type == "MIRROR":
+                        mod.name = f"WN_Mirror"
+                        break
                 mirrorMod = obj.modifiers["WN_Mirror"]
                 mirrorMod.use_axis[0] = False
                 mirrorMod.use_axis[self.id] = True

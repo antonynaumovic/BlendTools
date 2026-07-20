@@ -43,9 +43,9 @@ class MirrorSettings(bpy.types.PropertyGroup):
         update=MirrorObject,
     )
 
-class MirrorTools_PT_Panel(BlendTools_Panel, bpy.types.Panel):
-    bl_parent_id = "BLENDTOOLS_PT_panel"
+class BLENDTOOLS_PT_Panel_mirror(BlendTools_Panel, bpy.types.Panel):
     bl_label = "Mirror"
+    bl_idname = "BLENDTOOLS_PT_panel_mirror"
     @classmethod
     def poll(cls, context):
         return (context.object is not None)
@@ -69,7 +69,7 @@ class MirrorTools_PT_Panel(BlendTools_Panel, bpy.types.Panel):
         if len(list(filter(lambda x: x.name.startswith("WN_Mirror"), bpy.context.object.modifiers))) and len(bpy.context.selected_objects) > 1:
             layout.operator("object.updatemirrormod", text="Copy To Selected")
 
-class UpdateMirror_OT_Operator(bpy.types.Operator):
+class BLENDTOOLS_OT_Operator_updatemirror(bpy.types.Operator):
     bl_idname= "object.updatemirrormod"
     bl_label="mirrormod"
     bl_description="Update Mirror"
@@ -109,7 +109,7 @@ class UpdateMirror_OT_Operator(bpy.types.Operator):
         return{"FINISHED"}
 
 
-class AddMirror_OT_Operator(bpy.types.Operator):
+class BLENDTOOLS_OT_Operator_addmirror(bpy.types.Operator):
     bl_idname= "object.addmirror"
     bl_label="addmirror"
     bl_description="Add Mirror"

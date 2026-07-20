@@ -5,9 +5,9 @@ from mathutils.geometry import (
 from .panel_base import BlendTools_Panel
 
 
-class ExtraTools_PT_Panel(BlendTools_Panel, bpy.types.Panel):
-    bl_parent_id = "BLENDTOOLS_PT_panel"
-    bl_label = "Tools"
+class BLENDTOOLS_PT_Panel_extra(BlendTools_Panel, bpy.types.Panel):
+    bl_parent_id = "BLENDTOOLS_PT_panel_tools"
+    bl_label = "Extra"
     @classmethod
     def poll(cls, context):
         return (context.object is not None)
@@ -29,7 +29,10 @@ class ExtraTools_PT_Panel(BlendTools_Panel, bpy.types.Panel):
         layout.operator("object.decustom", text="Remove Custom Normals").id = True
         layout.operator("object.decustom", text="Add Custom Normals").id = False
         layout.operator("object.showconcave", text="Show Concave")
-        
+        row = layout.row(align=True)
+        layout.operator("object.togglecreases", text="Toggle Creases")
+        layout.operator("object.setcreasesweight", text="Set Creases to 1").id = True
+        layout.operator("object.setcreasesweight", text="Set Creases to 0").id = False
         
         
 def replace_material(bad_mat, good_mat):
@@ -82,7 +85,7 @@ def remove_all_duplicate_materials():
             
         i = i+1
 
-class MergeMats_OT_Operator(bpy.types.Operator):
+class BLENDTOOLS_OT_Operator_mergematerials(bpy.types.Operator):
     bl_idname= "object.mergematerials"
     bl_label="mergematerials"
     bl_description="Merge Duplicate Materials"
@@ -100,7 +103,7 @@ class MergeMats_OT_Operator(bpy.types.Operator):
 
         return {"FINISHED"}
 
-class Triangulate_OT_Operator(bpy.types.Operator):
+class BLENDTOOLS_OT_Operator_triangulate(bpy.types.Operator):
     bl_idname= "object.triangulate"
     bl_label="triangulate"
     bl_description="Triangulate"
@@ -131,7 +134,7 @@ class Triangulate_OT_Operator(bpy.types.Operator):
 
         return {"FINISHED"}
 
-class AddSuffix_OT_Operator(bpy.types.Operator):
+class BLENDTOOLS_OT_Operator_addsuffix(bpy.types.Operator):
     bl_idname= "object.addsuffix"
     bl_label="addsuffix"
     bl_description="Add Suffix"
@@ -156,7 +159,7 @@ class AddSuffix_OT_Operator(bpy.types.Operator):
         bpy.context.view_layer.objects.active = active
         return {"FINISHED"}
     
-class RemoveSuffix_OT_Operator(bpy.types.Operator):
+class BLENDTOOLS_OT_Operator_removesuffix(bpy.types.Operator):
     bl_idname= "object.removesuffix"
     bl_label="removesuffix"
     bl_description="Remove Suffix"
@@ -181,7 +184,7 @@ class RemoveSuffix_OT_Operator(bpy.types.Operator):
         return {"FINISHED"}
     
 
-class DeCustom_OT_Operator(bpy.types.Operator):
+class BLENDTOOLS_OT_Operator_decustom(bpy.types.Operator):
     bl_idname= "object.decustom"
     bl_label="decustom"
     bl_description="De Custom Split Normal"
@@ -207,7 +210,7 @@ class DeCustom_OT_Operator(bpy.types.Operator):
         return {"FINISHED"}
     
 
-class ShowConcave_OT_Operator(bpy.types.Operator):
+class BLENDTOOLS_OT_Operator_showconcave(bpy.types.Operator):
     bl_idname= "object.showconcave"
     bl_label="showconcave"
     bl_description="Flips Normals Of Concave"
@@ -241,3 +244,59 @@ class ShowConcave_OT_Operator(bpy.types.Operator):
         bpy.ops.object.mode_set(mode=mode)
         bpy.context.space_data.overlay.show_face_orientation = True
         return{'FINISHED'}
+    
+    
+
+class BLENDTOOLS_OT_Operator_togglecreases(bpy.types.Operator):
+    bl_idname= "object.togglecreases"
+    bl_label="Toggle Creases"
+    bl_description="Toggles crease values for selected faces"
+    
+    @classmethod
+    def poll(cls, context):
+        return context.active_object.mode == 'EDIT' and context.active_object.type == 'MESH'
+
+    def execute(self, context):
+        OB = bpy.context.selected_objects[0]
+        mesh = OB.data
+        
+        bm = bmesh.from_edit_mesh(bpy.context.object.data)
+        crease_layer = bm.edges.layers.float.get('crease_edge', None)
+        if crease_layer is None:
+            self.report({"WARNING"}, "No crease layer found")
+            return {'CANCELLED'}
+        for edge in bm.edges:
+            if edge.select:
+                edge[crease_layer] = (0.0 if edge[crease_layer] > 0.0 else 1.0)
+
+
+        bmesh.update_edit_mesh(mesh)
+        return{'FINISHED'}
+    
+class BLENDTOOLS_OT_Operator_setcreasesweight(bpy.types.Operator):
+    bl_idname= "object.setcreasesweight"
+    bl_label="Set Creases Weight"
+    bl_description="Sets crease values for selected faces"
+    id : bpy.props.BoolProperty()
+
+    @classmethod
+    def poll(cls, context):
+        return context.active_object.mode == 'EDIT' and context.active_object.type == 'MESH'
+
+    def execute(self, context):
+        bpy.ops.transform.edge_crease(value=1 if self.id else -1)
+        return{'FINISHED'}
+    
+class BLENDTOOLS_OT_Operator_setcreasesto0(bpy.types.Operator):
+    bl_idname= "object.setcreasesto0"
+    bl_label="Set Creases to 0"
+    bl_description="Sets crease values for selected faces to 0"
+
+    @classmethod
+    def poll(cls, context):
+        return context.active_object.mode == 'EDIT' and context.active_object.type == 'MESH'
+
+    def execute(self, context):
+        bpy.ops.transform.edge_crease(value=-1)
+        return{'FINISHED'}
+    

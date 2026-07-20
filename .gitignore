@@ -152,3 +152,8 @@ cython_debug/
 #.idea/
 
 __pycache__
+
+blender_vscode_development
+blend_tools-*.*.*.zip
+
+.github

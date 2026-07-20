@@ -1,0 +1,1 @@
+blender --command extension build --source-dir "X:\Github\BlendTools" --output-dir "X:\Github\BlendTools"
